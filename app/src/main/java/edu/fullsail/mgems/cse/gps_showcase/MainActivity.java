@@ -22,10 +22,19 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
+
 
 //Really Good Help
 //https://youtu.be/QNb_3QKSmMk
-public class MainActivity extends AppCompatActivity implements View.OnTouchListener {
+public class MainActivity extends AppCompatActivity implements View.OnTouchListener, OnMapReadyCallback {
+
+    private GoogleMap mMap;
 
     //private FusedLocationProviderClient mFusedLocationClient;
     private LocationManager locationManager;
@@ -39,6 +48,11 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.map);
+        mapFragment.getMapAsync(this);
+        //Intent intent = new Intent(this, MapsActivity.class);
+        //startActivity(intent);
 
         button = (Button) findViewById(R.id.button);
         button.setOnTouchListener(this);
@@ -49,9 +63,11 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         locationListener = new LocationListener() {
             @Override
             public void onLocationChanged(Location location) {
-                lon.append(" " + location.getLongitude());
-                lat.append(" " + location.getLatitude());
+                lon.setText("Lon:" + " " + location.getLongitude());
+                lat.setText("Lat:" + " " + location.getLatitude());
 
+                //mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(location.getLatitude(),location.getLongitude())));
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(),location.getLongitude()), 16.0f));
 
             }
 
@@ -73,24 +89,38 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
             }
         };
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-           
-            requestPermissions(new String[]{
-                    Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION,
-                    Manifest.permission.INTERNET
-            }, 10);
-            return;
-        }
-        else
-            ConfigureButton();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                    != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                    != PackageManager.PERMISSION_GRANTED) {
 
-            locationManager.requestLocationUpdates("gps", 5000, 1, locationListener);
+                requestPermissions(new String[]{
+                        Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION,
+                        Manifest.permission.INTERNET
+                }, 10);
+                return;
+            } else
+                ConfigureButton();
+
     }
 
-    private void ConfigureButton() {
+    private void ConfigureButton()
+    {
 
-        locationManager.requestLocationUpdates("gps", 1000, 1, locationListener);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            Toast.makeText(this,"GPS Signal not active", Toast.LENGTH_LONG).show();
+            return;
+        }
+        locationManager.requestLocationUpdates("gps", 100, 1, locationListener);
     }
 
     @Override
@@ -105,7 +135,30 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
     @Override
     public boolean onTouch(View view, MotionEvent motionEvent) {
-        locationManager.requestLocationUpdates("gps", 1000, 1, locationListener);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            Toast.makeText(this,"GPS Signal not active", Toast.LENGTH_LONG).show();
+            return false;
+        }
+        locationManager.requestLocationUpdates("gps", 100, 1, locationListener);
         return false;
+    }
+
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        mMap = googleMap;
+
+        // Add a marker in Sydney and move the camera
+        LatLng FullSail = new LatLng(28.5962177, -81.3414085);
+        mMap.addMarker(new MarkerOptions().position(FullSail).title("Marker at Full Sail University"));
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(FullSail));
     }
 }
